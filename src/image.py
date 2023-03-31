@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import ndimage
 from scipy.fft import dctn
-
+from IPython.core.debugger import set_trace as breakpoint
 
 def _validate_dims(array: np.ndarray) -> None:
     if len(array.shape) != 3:
@@ -48,6 +48,8 @@ def fft(
         array = array - ndimage.median_filter(
             array, size=(1, hp_filter_size, hp_filter_size)
         )
+    print('array shape: ', array.shape)
+    # breakpoint()
     fft_coeffs = np.fft.fft2(array, axes=(1, 2), norm="ortho")
     spectrum = np.fft.fftshift(fft_coeffs, axes=(1, 2))
     return spectrum
