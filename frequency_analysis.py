@@ -16,6 +16,10 @@ from src.optimization import parallel_map
 from src.paper_utils import configure_matplotlib, get_figsize, get_filename
 from src.visualization import plot_power_spectrum, plot_spectra
 
+from IPython.core.debugger import set_trace as breakpoint
+from reprlearn.utils.misc import now2str
+from pprint import pprint
+
 configure_matplotlib()
 
 
@@ -34,9 +38,10 @@ TRANSFORMS = {
 
 
 def main(
-    image_root: Path,
+    img_root: Path,
     output_root: Path,
     transform: str,
+    num_samples_per_imgdir: int,
     plot_subdir: Path,
     moment: str,
     log: bool,
@@ -60,23 +65,26 @@ def main(
     # compute mean and std of transform
     mean_std = parallel_map(
         apply_to_imgdir,
-        [image_root / dirname for dirname in img_dirs],
+        [img_root / dirname for dirname in img_dirs],
         num_workers=num_workers,
         mode="multiprocessing",
         func_kwargs=dict(
             func=TRANSFORMS[transform],
             grayscale=True,
+            num_samples=num_samples_per_imgdir,
             cache_dir=output_dir / "cache",
             overwrite=overwrite,
         ),
     )
     means, stds = zip(*mean_std)
     df = pd.DataFrame({"mean": means, "std": stds}, index=img_dirs)
-
+    print(df)
+    # breakpoint()
+    
     # plot
     labels = img_dirs
-    if (image_root / "labels.json").exists():
-        with open(image_root / "labels.json") as f:
+    if (img_root / "labels.json").exists():
+        with open(img_root / "labels.json") as f:
             label_updates = json.load(f)
         labels = [
             label_updates[label] if label in label_updates else label
@@ -84,6 +92,10 @@ def main(
         ]
 
     data = np.stack(df[moment])
+    print('data shape : ', data.shape)
+    print('moment: ', moment)
+    # breakpoint()
+    
     if transform == "density":
         plt.figure(figsize=get_figsize(fraction=fraction))
         if diff:
@@ -97,7 +109,15 @@ def main(
             plot_power_spectrum(data=data, labels=labels, log=log, zoom=zoom)
             plt.ylim(10**-5, 10**3)
     else:
-        plot_spectra(
+        # breakpoint()
+        # todo -- here!!
+        # >>> cocoaaa
+        # if diff: 
+        #     real = df[REAL_DIRNAME][moment]
+        #     df['diff'] = df[moment] - real
+        #     data = np.stack(df['diff']) 
+        # <<< 
+        fig = plot_spectra(
             data=np.abs(data),
             labels=labels,
             width=get_figsize(fraction=fraction)[0],
@@ -116,15 +136,22 @@ def main(
         identifiers="diff" if diff else None,
     )
     plt.savefig(plot_dir / filename)
+    
+    # save -- cocoaaaa
+    # for spectrum, model_name in zip(data, labels):
+    #     out_fp = plot_dir / f"{transform}_gm256_{model_name}_n:{num_samples_per_imgdir}.png"
+    #     plt.imsave(out_fp, np.abs(spectrum))
+    #     print(f"Saved: {model_name} --> {out_fp}")
+        
     plt.close()
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("image_root", type=Path, help="Root of image directory.")
-    parser.add_argument("output_root", type=Path, help="Output directory.")
-    parser.add_argument("transform", choices=TRANSFORMS, help="Transform to apply.")
+    parser.add_argument("--img_root", type=Path, help="Root of image directory.")
+    parser.add_argument("--output_root", type=Path, help="Output directory.")
+    parser.add_argument("--transform", choices=TRANSFORMS, help="Transform to apply.")
     parser.add_argument("--plot-subdir", type=Path)
     parser.add_argument(
         "--moment",
@@ -138,10 +165,17 @@ def parse_args():
         help="Whether to plot difference between real and other dirs.",
     )
     parser.add_argument(
-        "--img-dirs",
+        "--img_dirs",
         nargs="+",
         required=True,
         help="Image directories to analyze, order is maintained.",
+    )
+    parser.add_argument(
+        "--num_samples_per_imgdir",
+        type=int,
+        default=None,
+        help="Number of images to use from each img dir. "
+        "If not specified, use all images in each img dir"
     )
     parser.add_argument(
         "--overwrite",
@@ -149,7 +183,7 @@ def parse_args():
         help="Recompute instead of using existing data.",
     )
     parser.add_argument(
-        "--num-workers", type=int, default=4, help="Number of workers (default: 4)."
+        "--num_workers", type=int, default=4, help="Number of workers (default: 4)."
     )
     parser.add_argument(
         "--experiment",
@@ -181,4 +215,8 @@ def parse_args():
 
 
 if __name__ == "__main__":
+    # debug:
+    print('args: \n')
+    print(parse_args())
+    
     main(**vars(parse_args()))
