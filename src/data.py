@@ -15,6 +15,7 @@ from torchvision.datasets.folder import (
 from src.image import center_crop
 from src.optimization import with_caching
 
+from reprlearn.utils.misc import is_img_fp
 
 def array_from_imgdir(
     directory: Path,
@@ -29,12 +30,13 @@ def array_from_imgdir(
     """
     paths = []
     for path in directory.iterdir():
-        if path.suffix.lower() == ".png":
+        # if path.suffix.lower() == ".png":
+        if is_img_fp(path):
             paths.append(path)
         if num_samples is not None and len(paths) == num_samples:
             break
     if num_samples and len(paths) < num_samples:
-        warnings.warn(f"Found only {len(paths)} images instead of {num_samples}.")
+        warnings.warn(f"Found only {len(paths)} images instead of {num_samples}: {directory}")
 
     if grayscale:
 
@@ -45,7 +47,6 @@ def array_from_imgdir(
 
         def loader(path):
             return np.array(Image.open(path))
-
     if num_workers == 1:
         array = np.array(list(map(loader, paths)))
     else:
@@ -54,12 +55,15 @@ def array_from_imgdir(
         )
     if array.shape[1:] != (crop_size, crop_size):
         print(f"Cropping from {array.shape[1:]} to {crop_size, crop_size}.")
-    array = center_crop(array, size=crop_size)
+        array = center_crop(array, size=crop_size)
     array = array / 127.5 - 1  # scale to [-1, 1]
+    
+    print('Images are read: ', array.shape)
+
     return array
 
 
-@with_caching(keys=["img_dir", "func", "crop_size", "grayscale"])
+@with_caching(keys=["img_dir", "func", "crop_size", "grayscale", "num_samples"])
 def apply_to_imgdir(
     img_dir: Path,
     func: Callable,
