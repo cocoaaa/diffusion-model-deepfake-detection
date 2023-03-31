@@ -7,6 +7,7 @@ import seaborn as sns
 from matplotlib.colors import LogNorm
 from mpl_toolkits.axes_grid1 import AxesGrid, make_axes_locatable
 
+from reprlearn.utils.misc import now2str
 
 def plot_evolution(
     data: np.ndarray,
@@ -137,7 +138,8 @@ def plot_power_spectrum(
             line.set_linewidth(0.5)
 
     # axes
-    ax.set_xticks(np.linspace(0, data.shape[1] - 1, 3), labels=[0, 0.5, 1.0])
+    ax.set_xticks(np.linspace(0, data.shape[1] - 1, 3))
+    ax.set_xticklabels(labels=[0, 0.5, 1.0])
     ax.set_xlabel("$f/f_{nyq}$")
     ax.set_ylabel("Spectral Density")
     if log:
@@ -158,6 +160,7 @@ def plot_spectra(
     vmin: Optional[float] = None,
     vmax: Optional[float] = None,
     fixed_height: int = None,
+    out_dir: Optional[str] = None
 ) -> plt.Figure:
     """Plot 2D frequency spectra."""
     # get vim/vmax
@@ -195,11 +198,20 @@ def plot_spectra(
             vmax=vmax,
             cmap=sns.color_palette("mako", as_cmap=True),
         )
+        # breakpoint()
         if len(data) != 1:
             grid[i].set_title(label, pad=2)
 
         if i == len(labels) - 1:
             grid[-1].cax.colorbar(im)
-
-    plt.tight_layout(pad=0.5)
+        # todo: save as a file here:
+            # save -- cocoaaaa
+    # for spectrum, model_name in zip(data, labels):
+        model_name = labels[i]  
+        out_fp =  f"./fft-hp_gm256_{model_name}-{now2str()}.png"
+        plt.imsave(out_fp, im.get_array())
+        print(f"Saved: {model_name} --> {out_fp}")
+    
+    # plt.tight_layout(pad=0.5)
+    
     return fig
