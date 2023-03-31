@@ -102,10 +102,10 @@ def configure_matplotlib(
     import matplotlib as mpl
     import matplotlib.pyplot as plt
     import seaborn as sns
-    from seaborn._oldcore import unique_dashes
+    # from seaborn._oldcore import unique_dashes
 
-    dashes = unique_dashes(len(sns.color_palette("deep")))
-    dashes[0] = "-"
+    # dashes = unique_dashes(len(sns.color_palette("deep")))
+    # dashes[0] = "-"
 
     # modify rcParams
     params = {
@@ -129,8 +129,7 @@ def configure_matplotlib(
         "grid.linewidth": 0.25,
         "grid.linestyle": "--",
         "grid.color": "black",
-        "axes.prop_cycle": mpl.cycler(color=sns.color_palette("deep"))
-        + mpl.cycler(linestyle=dashes),
+        "axes.prop_cycle": mpl.cycler(color=sns.color_palette("deep")), # + mpl.cycler(linestyle=dashes),
         "axes.labelpad": 0.5,
         "xtick.major.pad": 1,
         "xtick.major.size": 2,
